@@ -1,0 +1,318 @@
+/* v0.12 */
+.pile.waste .card, .foundations .card {
+    box-shadow: none;
+}
+
+/* Draw-3 fan. renderWaste sets --fan to 0/1/2 on the last three cards. */
+.pile.waste {
+    --waste-fan-offset: 0.9em;
+}
+
+.pile.waste .card {
+    left: calc(var(--fan, 0) * var(--waste-fan-offset));
+}
+
+.pile.waste .card:last-child, .foundations .card:last-child {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.card {
+    width: var(--card-width);
+    height: var(--card-height);
+    border-radius: var(--card-radius);
+    position: absolute;
+    cursor: grab;
+    background: transparent;
+    transition: transform 0.44s cubic-bezier(0.2, 0.8, 0.2, 1);
+    box-shadow: 0 1px 8px rgba(0, 0, 0, 0.45);
+    transform-style: preserve-3d;
+    transform: translate(var(--drag-x, 0px), var(--drag-y, 0px)) rotate(var(--rotate, 0deg));
+    touch-action: none;
+    will-change: transform;
+}
+
+.stock-waste .card.face-down {
+    cursor: pointer;
+}
+.card.face-down {
+    cursor: default;
+    transform: translate(var(--drag-x, 0px), var(--drag-y, 0px)) rotateY(180deg);
+}
+
+.card.just-flipped {
+    animation: flip-reveal 0.45s ease;
+}
+
+.card-back {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: var(--card-radius);
+    background-color: white;
+    background-image: url("../court-cards/Back1Small.jpeg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    border: 0.1875rem solid rgba(255, 255, 255, 0.15);
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    transform: rotateY(180deg);
+    visibility: hidden;
+}
+
+.card img{
+    pointer-events: none;
+    vertical-align: middle;
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.card.no-anim {
+    transition: none;
+}
+
+/* Keyboard: a card armed for a move. Without this the whole keyboard flow
+   gives the player no feedback at all. */
+.card.selected {
+    outline: 0.125rem solid #f5d76e;
+    outline-offset: -0.125rem;
+    box-shadow: 0 0 0.9em rgba(245, 215, 110, 0.75);
+    z-index: 900;
+}
+
+/* The UA default ring is nearly invisible on a rotated card over felt. */
+.card:focus-visible,
+.pile:focus-visible {
+    outline: 0.1875rem solid #7fd1ff;
+    outline-offset: 0.125rem;
+    z-index: 901;
+}
+
+/* Cards carry an inline z-index for stacking order; beat it so a focused
+   buried card is not hidden under the cards stacked on it. */
+.card:focus-visible {
+    z-index: 901 !important;
+}
+
+/* After the rings: a dragged card must stack above a selected or focused one. */
+.card.dragging {
+    cursor: grabbing;
+    z-index: 1000 !important;
+    box-shadow: 0 1.4em 2.5em rgba(0, 0, 0, 0.65);
+    pointer-events: none;
+}
+
+.deal-ghost {
+    position: fixed;
+    width: var(--card-width);
+    height: var(--card-height);
+    pointer-events: none;
+    z-index: 3000;
+    transform-style: preserve-3d;
+    transition: transform 0.7s ease;
+    will-change: transform;
+}
+
+.deal-ghost .card-front,
+.deal-ghost .card-back {
+    visibility: visible;
+}
+
+.deal-destination-hidden {
+    opacity: 0;
+}
+
+.card .card-front {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: row;
+    padding: 0.3em 0.05em;
+    border-radius: var(--card-radius);
+    border: 1px solid #ddd;
+    position: absolute;
+    inset: 0;
+    backface-visibility: hidden;
+    background: var(--card-face);
+    visibility: visible;
+}
+
+.card.face-down .card-front {
+    visibility: hidden;
+}
+
+.card.face-down .card-back {
+    visibility: visible;
+}
+
+@keyframes flip-reveal {
+    from { transform: translate(var(--drag-x, 0px), var(--drag-y, 0px)) rotateY(180deg) rotate(0deg); }
+    to   { transform: translate(var(--drag-x, 0px), var(--drag-y, 0px)) rotateY(0deg) rotate(var(--rotate, 0deg)); }
+}
+
+.card-corner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    line-height: 1;
+    width: 0.75em;
+}
+
+.card-corner.bottom-right {
+    transform: rotate(180deg);
+}
+
+.card-rank {
+    font-size: 0.85em;
+    font-weight: 700;
+}
+
+.card-rank.bidigit {
+    font-weight: 900;
+    transform: scaleX(50%);
+}
+
+.card-suit-small {
+    font-family: 'Noto Sans Symbols 2';
+    font-size: 0.80em;
+    line-height: 1;
+}
+
+.card-court-face {
+    background-color: rgb(250, 250, 250);
+    max-width: 100%;
+    max-height: 100%;
+}
+
+.card-center {
+    padding: 0.15em;
+    flex: 5;
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.card-center.ace {
+    font-size: 1.3em;
+}
+
+.card-center:has(> div:nth-child(3):last-child) > div:nth-child(2) {
+    justify-content: space-evenly;
+}
+
+.ace .card-suit-column {
+    width: 100%;
+    margin: 0;
+    justify-content: center;
+    align-items: center;
+}
+
+.card-center:has( .card-suit-column:nth-child(3) > .card-suit-large:nth-child(3):last-child ) >
+    .card-suit-column:nth-child(2):has(div.card-suit-large:only-child) {
+    justify-content: start;
+    padding-top: 1.2em;
+}
+
+.card-suit-column {
+    margin: auto;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    justify-content: space-between;
+}
+
+.card-suit-large {
+    font-family: 'Noto Sans Symbols 2';
+    font-size: 100%;
+    margin: -2%;
+    line-height: 100%;
+    scale: 130%;
+    padding-top: 50%;
+}
+
+.card-suit-large.invert {
+    transform: rotate(180deg);
+}
+
+.ace .card-suit-large {
+    font-size: 200%;
+    width: 100%;
+    text-align: center;
+    padding-top: 0;
+    margin: 0;
+    margin-top: 0.25em;
+}
+
+.card.red {
+    color: var(--red-suit);
+}
+
+.card.black {
+    color: var(--black-suit);
+}
+
+.win-blast-layer {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 4000;
+}
+
+.win-fly-card {
+    position: fixed;
+    pointer-events: none;
+    will-change: transform, opacity;
+    animation: win-fly 3s cubic-bezier(0.2, 0.7, 0.2, 1) forwards;
+}
+
+@keyframes win-fly {
+    0% {
+        transform: translate(0, 0) rotate(0deg);
+        opacity: 1;
+    }
+    65% {
+        opacity: 1;
+    }
+    100% {
+        transform: translate(var(--win-x), var(--win-y)) rotate(var(--win-r)) scale(1.2);
+        opacity: 0;
+    }
+}
+
+@media (max-width: 768px) {
+    /* Tighter fan — the top row has far less slack before the foundations. */
+    .pile.waste {
+        --waste-fan-offset: 0.5em;
+    }
+
+    .card .card-center {
+        display: none;
+    }
+    .card .card-corner.top-left {
+        width: 100%;
+        padding: 0.25em;
+    }
+    .card .card-corner.top-left .card-rank {
+        display: block;
+        width: 100%;
+        align-content: flex-start;
+        margin-right: 0.60em;
+        text-align: center;
+        font-size: 300%;
+    }
+    .card .card-corner.top-left .card-suit-small {
+        display: block;
+        width: 100%;
+        align-content: flex-end;
+        margin-left: 0.25em;
+        margin-top: 0.125em;
+        text-align: center;
+        font-size: 350%;
+    }
+
+    .card .card-corner.bottom-right {
+        display: none;
+    }
+}

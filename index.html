@@ -1,0 +1,190 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <!-- No user-scalable=no: blocking pinch-zoom is a WCAG 1.4.4 failure, and
+         modern iOS ignores it anyway. Drag gestures are already protected by
+         touch-action: none on the piles and cards. -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Classic Klondike Solitaire in the browser: draw 1 or 3, drag or keyboard play, undo, offline-ready.">
+    <title>Klondike Solitaire</title>
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="Klondike Solitaire">
+    <meta property="og:description" content="Classic Klondike Solitaire in the browser: draw 1 or 3, drag or keyboard play, undo, offline-ready.">
+    <meta name="twitter:card" content="summary">
+    <link rel="icon" href="./icons/icon.svg" type="image/svg+xml">
+    <link rel="manifest" href="./manifest.json">
+    <meta name="theme-color" content="#1a472a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Solitaire">
+    <link rel="apple-touch-icon" href="./icons/icon-192.png">
+    <!-- Fonts are self-hosted: no third-party request, and the app renders
+         correctly on a first offline launch. See fonts/LICENSE.md. -->
+    <link rel="stylesheet" href="./css/fonts.css?v0.2">
+    <link rel="stylesheet" href="./css/styles.css?v0.15">
+    <link rel="stylesheet" href="./css/cards.css?v0.12">
+</head>
+<body>
+    <header>
+        <h1>Solitaire</h1>
+        <div class="stats">
+            <div class="stat"><span class="stat-label">Moves</span><span class="stat-value" id="moves">0</span></div>
+            <div class="stat"><span class="stat-label">Time</span><span class="stat-value" id="timer">00:00</span></div>
+        </div>
+        <div class="header-buttons">
+            <button class="icon-btn" id="undo-btn" title="Undo (Z)" aria-label="Undo">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14L4 9l5-5"></path><path d="M4 9h11a5 5 0 0 1 0 10h-4"></path></svg>
+            </button>
+            <button class="icon-btn" id="autocollect-btn" title="Autocollect" aria-label="Autocollect to foundations">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h16"></path><path d="M12 21V10"></path><path d="M7 14l5-5 5 5"></path></svg>
+            </button>
+            <button id="config-btn" class="icon-btn" aria-label="Settings" aria-expanded="false" aria-controls="config-panel">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                    <circle cx="12" cy="12" r="3"></circle>
+                    <path d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
+                </svg>
+            </button>
+            <button id="new-game-btn" class="btn" aria-label="New Game">
+                <svg class="btn-icon" viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"></path><path d="M3 3v5h5"></path></svg>
+                <span class="btn-text">New Game</span>
+            </button>
+            <button class="icon-btn info-floating-btn" id="info-btn" title="How to play" aria-label="How to play">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            </button>
+        </div>
+    </header>
+
+    <div id="config-panel" class="config-panel hidden" role="dialog" aria-label="Settings">
+        <fieldset class="config-group">
+            <legend class="sr-only">Draw mode</legend>
+            <label class="config-option">
+                <input type="radio" name="draw-count" value="1" checked>
+                <span>Draw 1 card</span>
+            </label>
+            <label class="config-option">
+                <input type="radio" name="draw-count" value="3">
+                <span>Draw 3 cards</span>
+            </label>
+            <p id="draw-note" class="config-note" hidden>Applies from the next game.</p>
+        </fieldset>
+        <label class="config-option">
+            <span>Table color</span>
+            <input type="color" id="bg-color-picker" aria-label="Table color">
+        </label>
+        <label class="config-option config-toggle" for="automove-toggle">
+            <span>Auto-move</span>
+            <span class="toggle">
+                <input type="checkbox" id="automove-toggle" checked aria-label="Auto-move">
+                <span class="toggle-slider" aria-hidden="true"></span>
+            </span>
+        </label>
+    </div>
+
+    <main class="game-board" aria-label="Solitaire Game Board">
+        <div class="sr-only" id="game-status" aria-live="polite"></div>
+        <div class="top-row">
+            <div class="stock-waste">
+                <div id="stock" class="pile stock"></div>
+                <div id="waste" role="group" class="pile waste"></div>
+            </div>
+            <div class="foundations">
+                <div id="foundation-0" role="group" class="pile foundation" data-suit="hearts"></div>
+                <div id="foundation-1" role="group" class="pile foundation" data-suit="diamonds"></div>
+                <div id="foundation-2" role="group" class="pile foundation" data-suit="clubs"></div>
+                <div id="foundation-3" role="group" class="pile foundation" data-suit="spades"></div>
+            </div>
+        </div>
+        <div class="tableau">
+            <div id="tableau-0" role="group" class="pile tableau"></div>
+            <div id="tableau-1" role="group" class="pile tableau"></div>
+            <div id="tableau-2" role="group" class="pile tableau"></div>
+            <div id="tableau-3" role="group" class="pile tableau"></div>
+            <div id="tableau-4" role="group" class="pile tableau"></div>
+            <div id="tableau-5" role="group" class="pile tableau"></div>
+            <div id="tableau-6" role="group" class="pile tableau"></div>
+        </div>
+    </main>
+
+    <canvas id="confettiCanvas" class="confetti-canvas" aria-hidden="true"></canvas>
+
+    <div id="info-overlay" class="info-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="info-title">
+        <div class="info-modal">
+            <button class="info-close" id="info-close" aria-label="Close">&times;</button>
+            <h3 id="info-title">How to play</h3>
+            <div class="info-body">
+                <p>Move all 52 cards to the four foundations, building each one up by
+                    suit from ace to king. In the tableau, stack cards downwards in
+                    alternating colours; only a king can fill an empty column. When
+                    you're stuck, turn cards over from the stock.</p>
+
+                <h4>Mouse and touch</h4>
+                <ul class="info-list">
+                    <li>Drag a card, or a run of cards, onto another pile.</li>
+                    <li>Double-click or double-tap a card to send it to a foundation, or,
+                        with Auto-move on, to a column that takes it.</li>
+                    <li>Click the stock to draw. Click the empty stock to turn the waste over.</li>
+                    <li>Autocollect sends every card that can go home to the foundations.</li>
+                </ul>
+
+                <h4>Keyboard</h4>
+                <ul class="info-list info-keys">
+                    <li><kbd>←</kbd> <kbd>↑</kbd> <kbd>→</kbd> <kbd>↓</kbd> Move between cards and piles</li>
+                    <li><kbd>Enter</kbd> / <kbd>Space</kbd> Pick up the focused card, then drop it on the focused pile. On the stock, draw.</li>
+                    <li><kbd>Esc</kbd> Put the card back, or close this panel</li>
+                    <li><kbd>Z</kbd> Undo. Each undo costs 5 moves.</li>
+                </ul>
+
+                <h4>Credits</h4>
+                <p class="info-credits">Court-card art by Chris Aguilar (LGPL 3.0). Sounds from
+                    OpenGameArt and Freesound (CC0). Fonts: Outfit, Lora and Noto Sans
+                    Symbols 2 (SIL OFL). Code under the MIT licence.</p>
+
+                <details id="device-info" class="device-info">
+                    <summary>Device info</summary>
+                    <div id="info-content" class="info-content"></div>
+                </details>
+            </div>
+        </div>
+    </div>
+
+    <div id="win-overlay" class="win-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="win-title">
+        <div class="win-modal">
+            <div class="win-label">YOU WON</div>
+            <h2 id="win-title">Beautifully played.</h2>
+            <div class="win-stats">
+                <div class="win-stat">
+                    <div class="win-stat-value" id="win-moves">0</div>
+                    <div class="win-stat-label">MOVES</div>
+                </div>
+                <div class="win-stat-divider"></div>
+                <div class="win-stat">
+                    <div class="win-stat-value" id="win-time">00:00</div>
+                    <div class="win-stat-label">TIME</div>
+                </div>
+            </div>
+            <button id="win-new-game" class="btn">Play Again</button>
+        </div>
+    </div> 
+    <script src="js/confetti.js?v0.4"></script>
+    <script src="js/cards.js?v0.2"></script>
+    <script src="js/game.js?v0.26"></script>
+    <script src="js/motion.js?v0.5"></script>
+    <script>
+        // Register service worker for offline / installable PWA.
+        // Guarded: SW requires http(s) or localhost — silently skipped on file://.
+        const isLocalhost = ['localhost', '127.0.0.1', '[::1]'].includes(location.hostname);
+        if ('serviceWorker' in navigator && location.protocol.startsWith('http') && !isLocalhost) {
+            window.addEventListener('load', () => {
+                navigator.serviceWorker.register('sw.js').catch(() => {});
+            });
+        } else if ('serviceWorker' in navigator && isLocalhost) {
+            // Dev: never let a stale SW shadow other projects on this origin.
+            navigator.serviceWorker.getRegistrations().then((regs) => {
+                for (const reg of regs) reg.unregister();
+            });
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,26 @@
+{
+  "name": "aisolitaire",
+  "version": "1.0.0",
+  "description": "Vanilla HTML/CSS/JS Klondike Solitaire — no frameworks, no build step, offline-ready PWA.",
+  "private": true,
+  "scripts": {
+    "test": "playwright test",
+    "test:quick": "playwright test --project=w1280",
+    "serve": "python3 -m http.server 8123",
+    "icons": "node icons/render-icons.js"
+  },
+  "keywords": [
+    "solitaire",
+    "klondike",
+    "card-game",
+    "vanilla-js",
+    "pwa",
+    "no-build"
+  ],
+  "author": "Guillelmus",
+  "license": "MIT",
+  "type": "commonjs",
+  "devDependencies": {
+    "@playwright/test": "^1.60.0"
+  }
+}

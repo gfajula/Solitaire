@@ -1,0 +1,781 @@
+/* v0.15 */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --bg-color: #1a472a;
+    --card-face: #fffef5;
+    --red-suit: #d63c2c;   /* 4.6:1 on the card face */
+    --black-suit: #2c3e50;
+    --empty-outline: rgba(255, 255, 255, 0.2);
+    --accent: #f1c40f;
+    --text-color: #ecf0f1;
+    --card-width: 5em;
+    --card-height: 7.6em;
+    --card-radius: 6px;
+    --card-gap: 2.5vw;
+    --card-vgap: 4.5vh;
+    --card-stack-offset: min(2em, var(--card-vgap));
+}
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background: var(--bg-color);
+    background-image: 
+        radial-gradient(
+            ellipse at center,
+            color-mix(in srgb, var(--bg-color) 70%, white) 0%,
+            var(--bg-color) 70%
+        ),
+        repeating-conic-gradient(from 0deg, transparent 0deg 90deg, rgba(255,255,255,0.02) 90deg 180deg);
+    min-height: 100vh;
+    color: var(--text-color);
+    overflow-x: hidden;
+    user-select: none;
+    -webkit-user-select: none;
+    font-size: clamp(11px, 1.9vw, 2.5vh);
+}
+
+header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.6em 1.2em;
+    background: rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+    font-size: 1.6em;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    text-shadow: 0.1em 0.1em 0.2em rgba(0, 0, 0, 0.3);
+    background: linear-gradient(180deg, #faf6ed 0%, #e3c388 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    color: transparent;
+}
+
+.header-buttons {
+    display: flex;
+    gap: 1em;
+}
+
+/* Header chips: text buttons (.btn) and square icon buttons (.icon-btn). */
+.btn,
+.icon-btn {
+    font-family: inherit;
+    font-size: 0.85em;
+    height: 2.5em;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    cursor: pointer;
+    transition: transform 120ms, background 120ms, border-color 120ms;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgb(241, 246, 247);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    backdrop-filter: blur(8px);
+    box-sizing: border-box;
+}
+
+.btn {
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    padding: 0 1em;
+}
+
+.icon-btn {
+    width: 2.5em;
+    padding: 0;
+}
+
+/* New Game shows text on desktop; its icon is mobile-only (see media query). */
+.btn .btn-icon { display: none; }
+
+.btn:hover,
+.icon-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.btn:active {
+    transform: scale(0.96);
+}
+
+.icon-btn:active {
+    transform: scale(0.94);
+}
+
+.icon-btn svg {
+    width: 1.1em;
+    height: 1.1em;
+}
+
+.icon-btn:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+}
+
+.config-panel {
+    position: fixed;
+    top: 4em;
+    right: 1em;
+    background: rgba(0, 0, 0, 0.85);
+    padding: 0.9em 1.2em;
+    border-radius: 0.5em;
+    z-index: 100;
+    backdrop-filter: blur(10px);
+    max-width: calc(100vw - 2em);
+}
+
+.config-panel.hidden {
+    display: none;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+}
+
+.config-option {
+    display: flex;
+    align-items: center;
+    gap: 0.6em;
+    cursor: pointer;
+    padding: 0.3em 0;
+    font-size: 0.9em;
+}
+
+.config-group {
+    border: 0;
+    padding: 0;
+    margin: 0;
+    min-width: 0;
+}
+
+.config-note {
+    font-size: 0.8em;
+    color: rgba(255, 255, 255, 0.75);
+    padding: 0 0 0.3em 1.9em;
+}
+
+.config-option input[type="radio"] {
+    accent-color: var(--accent);
+    width: 1em;
+    height: 1em;
+}
+
+.config-toggle {
+    justify-content: space-between;
+}
+
+.config-toggle .toggle {
+    position: relative;
+    width: 2.75em;
+    height: 1.5em;
+    display: inline-flex;
+    align-items: center;
+}
+
+.config-toggle .toggle input {
+    position: absolute;
+    opacity: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    cursor: pointer;
+}
+
+.config-toggle .toggle-slider {
+    position: absolute;
+    inset: 0;
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 999px;
+    transition: background 0.2s ease;
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.2);
+}
+
+.config-toggle .toggle-slider::after {
+    content: "";
+    position: absolute;
+    top: 0.18em;
+    left: 0.18em;
+    width: 1.15em;
+    height: 1.15em;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 0.2s ease;
+    box-shadow: 0 0.12em 0.35em rgba(0, 0, 0, 0.4);
+}
+
+.config-toggle .toggle input:checked + .toggle-slider {
+    background: var(--accent);
+}
+
+.config-toggle .toggle input:checked + .toggle-slider::after {
+    transform: translateX(1.25em);
+}
+
+.game-board {
+    padding: 1em 2em;
+    display: flex;
+    flex-direction: column;
+    gap: 1.5em;
+    margin: 0 auto;
+}
+
+.top-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 1em;
+}
+
+.stock-waste {
+    display: flex;
+    gap: var(--card-gap);
+}
+
+.foundations {
+    display: flex;
+    gap: var(--card-gap);
+}
+
+.tableau {
+    display: flex;
+    gap: var(--card-gap);
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.pile {
+    width: var(--card-width);
+    min-height: var(--card-height);
+    border-radius: var(--card-radius);
+    position: relative;
+    touch-action: none;
+    contain: layout;
+}
+
+/* Highlights piles that accept the stack being dragged. showDropHighlights()
+   toggles this on every drag — keep it styled or the work is wasted. */
+.pile.valid-drop {
+    box-shadow: 0 0 0 2px rgba(245, 215, 110, 0.9), 0 0 1.2em rgba(245, 215, 110, 0.45);
+}
+
+.pile.dragging-source {
+    z-index: 1000;
+}
+
+/* Empty-slot outline under tableau and waste piles. */
+.pile.tableau::before,
+.pile.waste::before {
+    content: "";
+    position: absolute;
+    border-radius: var(--card-radius);
+    background: var(--empty-outline);
+    border: 0.125rem dashed var(--empty-outline);
+    pointer-events: none;
+}
+
+/* A tableau pile is taller than a card; its slot is card-sized at the top. */
+.pile.tableau::before {
+    top: 0;
+    left: 0;
+    width: var(--card-width);
+    height: var(--card-height);
+}
+
+.pile.waste::before {
+    inset: 0;
+    z-index: 0;
+}
+
+.pile.stock {
+    cursor: pointer;
+}
+
+.pile.stock.empty {
+    cursor: default;
+}
+
+.pile.stock.empty:hover::after {
+    color:white;
+    transform: scale(1.3) translate(-50%, -50%);
+    transform-origin: center;
+}
+.pile.stock.empty::after {
+    transition: all 0.5s ease;
+    cursor: pointer;
+    content: "↻";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 2.2em;
+    color: var(--empty-outline);
+}
+
+.pile.foundation {
+    border: 0.125rem solid var(--empty-outline);
+}
+
+.pile.tableau {
+    min-height: min(60vh, calc(var(--card-height) * 10));
+}
+
+.win-overlay,
+.info-overlay {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.win-overlay.hidden,
+.info-overlay.hidden {
+    display: none;
+}
+
+.win-overlay {
+    background: rgba(0, 0, 0, 0.5);
+    /* Above .win-blast-layer (4000): the modal now pops while cards are still
+       flying, so the cascade must pass behind it. */
+    z-index: 4500;
+    backdrop-filter: blur(5px);
+}
+
+.info-floating-btn {
+    position: fixed;
+    bottom: 0.8em;
+    left: 0.8em;
+    z-index: 200;
+    opacity: 0.5;
+    transition: opacity 150ms;
+}
+
+.info-floating-btn:hover {
+    opacity: 1;
+}
+
+.info-overlay {
+    background: rgba(0, 0, 0, 0.45);
+    z-index: 1400;
+    backdrop-filter: blur(3px);
+}
+
+.info-modal {
+    position: relative;
+    background: linear-gradient(135deg, #f5f1e8 0%, #ede7d9 100%);
+    color: #2c3e50;
+    padding: 1.6em 1.8em 1.4em;
+    border-radius: 0.8em;
+    min-width: 18em;
+    max-width: calc(100vw - 2em);
+    box-shadow: 0 0.8em 2em rgba(0, 0, 0, 0.4);
+}
+
+.info-modal h3 {
+    font-family: 'Lora', 'Georgia', serif;
+    font-weight: 500;
+    font-size: 1.1em;
+    margin: 0 0 0.6em;
+    color: #7a5c32;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.info-body {
+    font-size: 0.9em;
+    line-height: 1.5;
+    color: #2c3e50;
+    max-width: 30em;
+    max-height: 70vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    user-select: text;
+    -webkit-user-select: text;
+}
+
+.info-body h4 {
+    font-size: 0.75em;
+    font-weight: 600;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #7a5c32;
+    margin: 1.2em 0 0.4em;
+}
+
+.info-list {
+    padding-left: 1.2em;
+}
+
+.info-list li + li {
+    margin-top: 0.3em;
+}
+
+.info-keys {
+    list-style: none;
+    padding-left: 0;
+}
+
+.info-body kbd {
+    display: inline-block;
+    min-width: 1.6em;
+    padding: 0.05em 0.35em;
+    border: 1px solid rgba(44, 62, 80, 0.3);
+    border-bottom-width: 0.125rem;
+    border-radius: 4px;
+    background: #fffef8;
+    font-family: inherit;
+    font-size: 0.85em;
+    text-align: center;
+}
+
+.info-credits {
+    color: #56606b;
+}
+
+.device-info {
+    margin-top: 1.2em;
+    border-top: 1px solid rgba(44, 62, 80, 0.12);
+    padding-top: 0.8em;
+}
+
+.device-info summary {
+    cursor: pointer;
+    color: #56606b;
+    font-size: 0.85em;
+}
+
+.info-content {
+    font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+    font-size: 0.8em;
+    line-height: 1.5;
+    color: #3a4a5c;
+    word-break: break-word;
+    margin-top: 0.6em;
+}
+
+.motion-props {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.motion-props li {
+    display: flex;
+    justify-content: space-between;
+    gap: 1em;
+    padding: 0.25em 0;
+    border-bottom: 1px solid rgba(44, 62, 80, 0.12);
+}
+
+.motion-props .mp-key {
+    color: #6b5b45;
+}
+
+.motion-props .mp-val {
+    font-weight: 600;
+    color: #2c3e50;
+    white-space: nowrap;
+}
+
+.info-close {
+    position: absolute;
+    top: 0.4em;
+    right: 0.6em;
+    background: transparent;
+    border: 0;
+    font-size: 1.6em;
+    line-height: 1;
+    color: #56606b;
+    cursor: pointer;
+    padding: 0.2em 0.4em;
+    border-radius: 6px;
+}
+
+.info-close:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #2c3e50;
+}
+
+.win-modal {
+    background: linear-gradient(135deg, #f5f1e8 0%, #ede7d9 100%);
+    color: #2c3e50;
+    padding: 2.5em 3.2em;
+    border-radius: 1.2em;
+    text-align: center;
+    box-shadow: 0 1.2em 3.5em rgba(0, 0, 0, 0.5);
+    animation: win-pop 0.4s ease-out;
+    max-width: calc(100vw - 2em);
+}
+
+@keyframes win-pop {
+    0% {
+        transform: scale(0.5);
+        opacity: 0;
+    }
+    70% {
+        transform: scale(1.1);
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.win-label {
+    font-size: 0.7em;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #7a5c32;
+    font-weight: 600;
+    margin-bottom: 0.8em;
+}
+
+.win-modal h2 {
+    font-family: 'Lora', 'Georgia', serif;
+    font-size: 2.4em;
+    font-weight: 400;
+    margin-bottom: 1.2em;
+    color: #2c3e50;
+    text-shadow: none;
+    letter-spacing: -0.02em;
+    line-height: 1.2;
+}
+
+.win-stats {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 2em;
+    margin-bottom: 1.8em;
+}
+
+.win-stat {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.4em;
+}
+
+.win-stat-value {
+    font-size: 1.8em;
+    font-weight: 600;
+    color: #2c3e50;
+    font-variant-numeric: tabular-nums;
+}
+
+.win-stat-label {
+    font-size: 0.65em;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: #6b5b45;
+    font-weight: 500;
+}
+
+.win-stat-divider {
+    width: 1px;
+    height: 2.5em;
+    background: rgba(44, 62, 80, 0.2);
+}
+
+.win-modal .btn {
+    backdrop-filter: none;
+    font-size: 0.75em;
+    padding: 0.85em 2em;
+    background: #b8956a;
+    color: #1a252f;
+    border: 1px solid #b8956a;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+}
+
+.win-modal .btn:hover {
+    background: #a88563;
+    border-color: #a88563;
+}
+
+
+/* Sized in rem, not em: the stats chip is chrome that must stay legible at
+   every viewport, and body font-size bottoms out at 8px on small screens. */
+.stats {
+    display: flex;
+    gap: 1.75rem;
+    background: rgba(255, 255, 255, 0.10);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 999px;
+    padding: 0.5rem 1.125rem;
+}
+
+.stat {
+    display: flex;
+    align-items: baseline;
+    gap: 0.5rem;
+}
+
+.stat-label {
+    font-size: 0.6875rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(236, 243, 244, 0.75);
+}
+
+.stat-value {
+    font-variant-numeric: tabular-nums;
+    font-weight: 600;
+    font-size: 0.875rem;
+    color: rgb(241, 246, 247);
+    transition: color 0.25s ease;
+}
+
+.stat-value.flash-red {
+    color: #e74c3c;
+    animation: stat-flash-red 0.55s ease-out;
+}
+
+@keyframes stat-flash-red {
+    0%   { color: #e74c3c; transform: scale(1.18); }
+    40%  { color: #e74c3c; transform: scale(1); }
+    100% { color: rgb(241, 246, 247); transform: scale(1); }
+}
+
+.confetti-canvas {
+  position: fixed;
+  inset: 0;
+  /* Stays above the win overlay, as it always was. */
+  z-index: 5000;
+  pointer-events: none;
+}
+
+.reduced-motion * {
+  animation: none !important;
+  transition: none !important;
+}
+
+/* Mobile. Kept last so it overrides the desktop rules above at equal
+   specificity; earlier in the file the later desktop rules silently won. */
+@media (max-width: 768px) {
+    body {
+        font-size: clamp(8px, 2vw, 16px);
+
+        --card-width: 5.5em;
+        --card-height: 8.1em;
+        --card-gap: 1vw;
+        --card-vgap: 6vh;
+        --card-stack-offset: min(3em, var(--card-vgap));
+    }
+
+    /* The bottom padding keeps the lowest cards clear of the toolbar. */
+    .game-board {
+        padding: 0.5em 0.5rem calc(4.25rem + env(safe-area-inset-bottom, 0px));
+        gap: 0.8em;
+    }
+
+    .tableau {
+        justify-content: space-between;
+        gap: 1vw;
+        flex-wrap: nowrap;
+    }
+
+    /* Slim top bar: the title is visually hidden, the stats are centred. */
+    header {
+        padding: 0.4em 0.8em;
+        justify-content: center;
+    }
+    h1 {
+        position: absolute;
+        width: 1px;
+        height: 1px;
+        margin: -1px;
+        overflow: hidden;
+        clip: rect(0, 0, 0, 0);
+        white-space: nowrap;
+    }
+
+    /* Actions move to a fixed bottom toolbar in the thumb zone. Sized in rem:
+       body font-size bottoms out at 8px here, far too small for touch. */
+    .header-buttons {
+        position: fixed;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        gap: 0.5rem;
+        justify-content: space-around;
+        align-items: center;
+        padding: 0.4rem 0.75rem;
+        padding-bottom: calc(0.4rem + env(safe-area-inset-bottom, 0px));
+        background: rgba(10, 30, 20, 0.72);
+        backdrop-filter: blur(12px);
+        border-top: 1px solid rgba(255, 255, 255, 0.12);
+        z-index: 500;
+    }
+
+    /* 44px touch targets (WCAG 2.5.5), evenly spread. */
+    .header-buttons .btn,
+    .header-buttons .icon-btn {
+        height: 2.75rem;
+        min-width: 2.75rem;
+        flex: 1 1 0;
+        max-width: 4.5rem;
+        border-radius: 12px;
+    }
+
+    .header-buttons svg {
+        width: 1.25rem;
+        height: 1.25rem;
+    }
+
+    /* New Game collapses to an accented icon. */
+    #new-game-btn {
+        padding: 0;
+        background: rgba(227, 195, 136, 0.18);
+        border-color: rgba(227, 195, 136, 0.4);
+        color: #f0d9a8;
+    }
+    #new-game-btn .btn-text { display: none; }
+    #new-game-btn .btn-icon { display: inline-flex; }
+
+    /* Info button leaves its desktop bottom-left float and joins the bar. */
+    .info-floating-btn {
+        position: static;
+        opacity: 1;
+    }
+
+    /* Panels and modals read at a fixed size rather than the shrunken body. */
+    .config-panel,
+    .info-modal,
+    .win-modal {
+        font-size: 0.875rem;
+    }
+
+    /* Settings popover sits just above the toolbar, and above its z-index. */
+    .config-panel {
+        top: auto;
+        bottom: calc(4rem + env(safe-area-inset-bottom, 0px));
+        right: 0.5rem;
+        z-index: 600;
+    }
+
+    .win-modal {
+        padding: 1.75em 1.5em;
+    }
+
+    .win-modal h2 {
+        font-size: 1.8em;
+    }
+}
