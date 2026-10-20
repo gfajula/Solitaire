@@ -1,14 +1,16 @@
 # Klondike Solitaire
 
+**[▶ Play it in your browser](https://gfajula.github.io/Solitaire/)**
+
 Classic Klondike Solitaire for the browser, written in plain HTML, CSS and
 JavaScript. There is no framework, no dependency at runtime and no build
 step. It plays with a mouse, by touch or entirely from the keyboard, scales
 from a 320px phone to a 1920px desktop, and installs as an offline PWA.
 
 <p align="center">
-  <img src="docs/images/screenshot-desktop.webp" alt="Desktop view: a game in progress with three foundations started and the draw-3 waste fanned out" width="640">
+  <a href="https://gfajula.github.io/Solitaire/"><img src="docs/images/screenshot-desktop.webp" alt="Desktop view: a game in progress with three foundations started and the draw-3 waste fanned out" width="640"></a>
   &nbsp;
-  <img src="docs/images/screenshot-mobile.webp" alt="Phone view of the same game, with large card indices and a bottom toolbar" width="180">
+  <a href="https://gfajula.github.io/Solitaire/"><img src="docs/images/screenshot-mobile.webp" alt="Phone view of the same game, with large card indices and a bottom toolbar" width="180"></a>
 </p>
 
 ## Features
